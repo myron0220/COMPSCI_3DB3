@@ -1,0 +1,141 @@
+\documentclass[11pt,fleqn]{exam}
+
+\setlength {\topmargin} {-.15in}
+\setlength {\textheight} {8.6in}
+\usepackage{enumerate}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage{graphicx}
+\newcommand{\nn}{~\newline \noindent }
+\newcommand{\mn}[1]{\mbox{\sf #1}}
+\newcommand{\sbs}{\subsection*}
+
+\begin{document}
+	
+	\begin{center}
+		
+		{\large \textbf{COMPSCI 3DB3}}\\[2mm]
+		{\huge \textbf{Assignment 3 Report}}\\[6mm]
+		{\large \textbf{Mingzhe Wang}}\\[2mm]
+		{\large \textbf{McMaster University}}\\[6mm]
+		{\large \today}
+		
+	\end{center}
+	
+\medskip
+\section*{Part one}
+\subsection*{Subscriber}
+subscriber(\underline{username}: VARCHAR(255), \underline{number}: INT, email: VARCHAR(255), hash: BINARY(512), salt: BINARY(512)).
+\begin{itemize}
+\item The username and number should be the primary key. 
+\item \mn{VARCHAR(255)} is selected as the type for email, because an email address consists of variable length character.
+\item \mn{BINARY(512)} is the type of hash and salt value, because they are stored in fixed-length binary strings.
+\item Note: because db2 seems not to support \mn{BINARY(512)} type, in the code, we use VARCHAR(512) instead.
+\end{itemize}
+
+\subsection*{Friend\_Of}
+friend\_of(\underline{fname}: VARCHAR(255), \underline{fnumber}: INT, \underline{tname}: VARCHAR(255), \underline{tnumber}: INT).
+\begin{itemize}
+\item fname, fnumber, tname, tnumber should all be not null, primary key, and reference from subscriber(username) and subscriber(number).
+\end{itemize}
+
+\subsection*{Review}
+review(\underline{uname}: VARCHAR(255), \underline{unumber}: INT,  \underline{revision}: INT, \underline{[Forfilm's primary key(s)]}: [corresponding type(s)], score: INT, timestamp: TIMESTAMP).
+\begin{itemize}
+\item If we assume the score is in the range $[0, 10]$, the we should mark this as a constraint and check it.
+\item We may need to update the ForFilm part later, as this information haven't been constructed.
+\end{itemize}
+
+\subsection*{VideoReview}
+video\_review(\underline{uname}: VARCHAR(255), \underline{unumber}: INT,  \underline{revision}: INT, \underline{[Forfilm's primary key(s)]}: [corresponding type(s)], video: BLOB).
+\begin{itemize}
+\item We use ER method to construct ISA, because a review could have both kinds of reviews (video and text).
+\item The uname, unumber, revision, and [Forfilm's primary key(s)] are foreign keys pointing to subscriber's.
+\end{itemize}
+
+\subsection*{TextReview}
+text\_review(\underline{uname}: VARCHAR(255), \underline{unumber}: INT,  \underline{revision}: INT, \underline{[Forfilm's primary key(s)]}: [corresponding type(s)], description: CLOB).
+\begin{itemize}
+\item Similar to videoreview.
+\end{itemize}
+
+\subsection*{Reaction}
+reaction(\underline{id}: INT, byuname: VARCHAR(255),  byunumber: INT, title: VARCHAR(255), content: CLOB).
+\begin{itemize}
+\item We use ER method here, because the ThreadR entity could have a relation with Reaction.
+\item We store the by subscriber's username and number here as foreign keys referencing subscriber(username, number), as reaction only participates exactly once in the``by" relation. It should also has a NOT NULL constraint.
+\end{itemize}
+
+\subsection*{ThreadR}
+reaction(\underline{id}: INT, onid: INT)
+\begin{itemize}
+\item We need id for ISA relation and onid for On\_Ration relation. Both id and onid should reference to the reaction(id).
+\end{itemize}
+
+\subsection*{ReviewR}
+review\_r(\underline{id}: INT, [Forfilm's primary key(s)]: [corresponding type(s)])
+\begin{itemize}
+\item We store the On\_Review relation as foreign keys referencing to Review's primary keys, because the ReviewR entity participates exactly once in this relation.  It should also has a NOT NULL constraint.
+\end{itemize}
+
+\section*{Part two}
+\subsection*{person}
+person(\underline{id}: INT, name: VARCHAR(255), birthdate\textsubscript{optional}: DATE)
+\subsection*{film}
+film(\underline{title}: VARCHAR(255), \underline{year}: INT, \underline{creator}: INT, duration: INTERVAL, budget: DECIMAL(50,2))
+\begin{itemize}
+\item We treat creator as a strict one-to-many relationship between film and person, so we store it in film.
+\item foreign key constrain: creator references to person(id).
+\end{itemize}
+\subsection*{film\_info (view)}
+(view) film\_info(\underline{title}: VARCHAR(255), \underline{year}: INT, \underline{creator}: INT, duration: INTERVAL, budget: DECIMAL(50,2))
+\begin{itemize}
+\item this is a view, so we should use "select" sytax later.
+\end{itemize}
+\subsection*{role\_as}
+role\_as(\underline{pid}: INT, \underline{ftitle}: VARCHAR(255), \underline{fyear}: INT, \underline{fcreator}: INT, role: VARCHAR(20))
+\begin{itemize}
+\item we assume play\_role\_as as a many-to-many relation between person and film. The relationship should has an attribute role to denote the person's current role in the file. For cases where a person can perform many roles in a film, just add multiple instances with different role attributes.
+\end{itemize}
+\subsection*{constraint}
+this can be implemented using multi-table constraints by:\\
+CREATE TABLE film(\\
+title VARCHAR(255) ...,\\
+year INT ...,\\
+creater INT ..., \\
+CHECK (creater IN (SELECT r.id FROM roleas r WHERE (r.ftitle = title AND r.fyear = year AND r.fcreator = creator) AND r.role = "director"));
+
+\section*{Note}
+By now, we know what are the primary keys in film, so we need to replace every occurrence of ``[Forfilm's primary key(s)]: [corresponding type(s)]'', that is:
+
+
+\subsection*{film}
+\underline{title}: VARCHAR(255), \underline{year}: INT, \underline{creator}: INT, 
+
+
+\subsubsection*{Review}
+review(\underline{uname}: VARCHAR(255), \underline{unumber}: INT,  \underline{revision}: INT, \underline{ftitle}: VARCHAR(255), \underline{fyear}: INT, \underline{fcreator}: INT, score: INT, timestamp: TIMESTAMP).
+\subsubsection*{VideoReview}
+video\_review(\underline{uname}: VARCHAR(255), \underline{unumber}: INT,  \underline{revision}: INT, \underline{ftitle}: VARCHAR(255), \underline{fyear}: INT, \underline{fcreator}: INT,  video: BLOB).
+\subsubsection*{TextReview}
+text\_review(\underline{uname}: VARCHAR(255), \underline{unumber}: INT,  \underline{revision}: INT, \underline{ftitle}: VARCHAR(255), \underline{fyear}: INT, \underline{fcreator}: INT,  description: CLOB).
+\subsubsection*{ReviewR}
+review\_r(\underline{id}: INT,  uname: VARCHAR(255), unumber: INT, revision: INT, ftitle: VARCHAR(255), fyear: INT, fcreator: INT)
+
+
+
+
+
+
+
+
+		
+	
+	
+
+
+
+\end{document}
+
+
